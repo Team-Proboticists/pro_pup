@@ -122,15 +122,9 @@ Fully autonomous navigation
 Remote control via app or voice
 
 
-
----
-
-License
-
-
 ---
 
 ### Authors
 
-Team Probiotics, IIT Kharagpur
+Team Proboticists, IIT Kharagpur
 Designed & developed by students passionate about robotics.
