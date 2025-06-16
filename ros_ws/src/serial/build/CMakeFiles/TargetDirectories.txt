@@ -1,0 +1,10 @@
+/home/mmmtech/Documents/ros2_ws/src/serial/build/CMakeFiles/uninstall.dir
+/home/mmmtech/Documents/ros2_ws/src/serial/build/CMakeFiles/serial_uninstall.dir
+/home/mmmtech/Documents/ros2_ws/src/serial/build/CMakeFiles/serial.dir
+/home/mmmtech/Documents/ros2_ws/src/serial/build/CMakeFiles/test.dir
+/home/mmmtech/Documents/ros2_ws/src/serial/build/CMakeFiles/edit_cache.dir
+/home/mmmtech/Documents/ros2_ws/src/serial/build/CMakeFiles/rebuild_cache.dir
+/home/mmmtech/Documents/ros2_ws/src/serial/build/CMakeFiles/list_install_components.dir
+/home/mmmtech/Documents/ros2_ws/src/serial/build/CMakeFiles/install.dir
+/home/mmmtech/Documents/ros2_ws/src/serial/build/CMakeFiles/install/local.dir
+/home/mmmtech/Documents/ros2_ws/src/serial/build/CMakeFiles/install/strip.dir
