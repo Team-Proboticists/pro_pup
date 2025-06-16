@@ -1,0 +1,145 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+import math
+
+# ------------------------------------------------------
+# Gait and Time Parameters
+# ------------------------------------------------------
+cycle_time = 1.0      # Total gait cycle time (seconds)
+dt = 0.02             # Time step (seconds)
+time_steps = np.arange(0, cycle_time, dt)
+swing_duration = 0.5  # Duration (seconds) of swing phase for each leg
+
+# ------------------------------------------------------
+# Step Parameters (for sideways movement to the RIGHT)
+# ------------------------------------------------------
+step_width = 2.0    # Lateral displacement (cm) that the foot moves when swinging
+step_height = 2.0   # Maximum vertical lift (cm) during swing
+
+# ------------------------------------------------------
+# Define Base Positions and Phase Offsets for Each Leg
+# ------------------------------------------------------
+# Coordinates: [x (lateral), y (fore/aft), z (vertical)]
+legs = {
+    'FR': {'base': np.array([5.0,  10.0, 0.0]), 'phase_offset': 0.5},  # Front Right
+    'FL': {'base': np.array([-5.0, 10.0, 0.0]), 'phase_offset': 0.0},   # Front Left
+    'RR': {'base': np.array([5.0,  -10.0, 0.0]), 'phase_offset': 0.0},   # Rear Right
+    'RL': {'base': np.array([-5.0, -10.0, 0.0]), 'phase_offset': 0.5}    # Rear Left
+}
+
+# ------------------------------------------------------
+# Generate Leg Trajectories for Sideways Gait
+# ------------------------------------------------------
+leg_trajs = {name: [] for name in legs}  # Store trajectory positions for each leg
+
+for t in time_steps:
+    for leg, info in legs.items():
+        base = info['base']
+        offset = info['phase_offset']
+        # Compute effective time in the cycle (wraps around using modulo)
+        t_eff = (t + offset * cycle_time) % cycle_time
+        
+        if t_eff < swing_duration:
+            # SWING PHASE: foot lifts and shifts laterally.
+            tau = t_eff / swing_duration  # normalized time in [0,1]
+            x = base[0] + step_width * tau
+            z = step_height * np.sin(np.pi * tau)
+        else:
+            # STANCE PHASE: foot remains planted at the lateral target.
+            x = base[0] + step_width
+            z = 0.0
+
+        y = base[1]  # Fore/aft remains constant.
+        pos = np.array([x, y, z])
+        leg_trajs[leg].append(pos)
+
+# Convert the trajectories to numpy arrays.
+for leg in legs:
+    leg_trajs[leg] = np.array(leg_trajs[leg])
+
+# ------------------------------------------------------
+# 2D Inverse Kinematics (for XZ Plane)
+# ------------------------------------------------------
+def inverse_kinematics_2d(x, z, L1, L2):
+    """
+    Compute IK for a two-link leg in the (x,z) plane.
+    x: lateral displacement (cm) in the leg's plane.
+    z: effective leg extension (cm) (e.g. hip_z - foot_z).
+    Returns:
+        theta_hip (radians) and theta_knee (radians).
+    """
+    r = np.sqrt(x**2 + z**2)
+    D = min(r, L1 + L2)
+    cos_theta2 = (L1**2 + L2**2 - D**2) / (2 * L1 * L2)
+    cos_theta2 = np.clip(cos_theta2, -1.0, 1.0)
+    theta_knee = np.pi - np.arccos(cos_theta2)
+    
+    cos_beta = (L1**2 + D**2 - L2**2) / (2 * L1 * D)
+    cos_beta = np.clip(cos_beta, -1.0, 1.0)
+    beta = np.arccos(cos_beta)
+    gamma = np.arctan2(z, x)
+    theta_hip = gamma + beta
+    return theta_hip, theta_knee
+
+# ------------------------------------------------------
+# Visualization: Animate the Gait
+# ------------------------------------------------------
+fig = plt.figure(figsize=(10, 6))
+ax = fig.add_subplot(111, projection='3d')
+
+colors = {'FR': 'r', 'FL': 'g', 'RR': 'b', 'RL': 'm'}
+
+# Create markers and trace lines for each leg.
+markers = {}
+lines = {}
+trace_data = {leg: [] for leg in legs}
+
+for leg in legs:
+    pos0 = leg_trajs[leg][0]
+    markers[leg], = ax.plot([pos0[0]], [pos0[1]], [pos0[2]],
+                            marker='o', color=colors[leg], markersize=8, label=leg)
+    lines[leg], = ax.plot([], [], [], color=colors[leg], linestyle='--', linewidth=1)
+
+ax.set_xlim(-10, 10)
+ax.set_ylim(-15, 15)
+ax.set_zlim(0, step_height + 1)
+ax.set_xlabel('X (cm) - Lateral')
+ax.set_ylabel('Y (cm) - Fore/Aft')
+ax.set_zlabel('Z (cm) - Vertical')
+ax.set_title("Quadruped Sideways Gait (Moving to the Right) with Hip YZ Angle = 0")
+ax.legend()
+
+# For this example, we assume a fixed hip height.
+hip_z = 20.0  # in cm
+
+def update(frame):
+    for leg in legs:
+        pos = leg_trajs[leg][frame]
+        markers[leg].set_data([pos[0]], [pos[1]])
+        markers[leg].set_3d_properties([pos[2]])
+        trace_data[leg].append(pos)
+        trace = np.array(trace_data[leg])
+        lines[leg].set_data(trace[:, 0], trace[:, 1])
+        lines[leg].set_3d_properties(trace[:, 2])
+        
+        # --- 3D IK (with Hip YZ angle forced to 0) ---
+        # Use the base of each leg as the hip location.
+        base = legs[leg]['base']
+        rel_target = pos - base  # relative foot target with respect to the hip.
+        # Force the fore/aft (y) component to zero.
+        rel_target[1] = 0.0
+        x_rel = rel_target[0]
+        effective_extension = hip_z - pos[2]
+        theta_hip, theta_knee = inverse_kinematics_2d(x_rel, effective_extension, 12.0, 15.5)
+        # Force the hip flexion (in the YZ plane) to zero.
+        theta_hip = 0.0
+
+        # For debugging: print the computed angles.
+        print(f"Leg {leg}: theta_hip = {theta_hip:.2f} rad, theta_knee = {theta_knee:.2f} rad")
+        
+    return list(markers.values()) + list(lines.values())
+
+# Use blit=False for 3D animations.
+ani = FuncAnimation(fig, update, frames=len(time_steps), interval=dt*1000, blit=False)
+plt.show()
