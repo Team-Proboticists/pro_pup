@@ -1,130 +1,106 @@
-# Quadruped Robot with YOLO-Based Object Tracking & Autonomous Motion
-
-A fully functional quadruped robot inspired by Boston Dynamics' Spot. This robot is capable of stable walking, balance correction using sensor fusion, and autonomous human/object following using real-time vision and depth sensing.
+# Quadruped Robot Dog: Gait-Controlled Walking Robot  
+*A modular quadruped platform for research and development*
 
 ## Table of Contents
-- [Overview](#overview)
-- [Features](#features)
-- [Hardware Architecture](#hardware-architecture)
-- [Software Stack](#software-stack)
-- [Tracking & Following System](#tracking--following-system)
-- [Motion Control Pipeline](#motion-control-pipeline)
-- [Power System](#power-system)
-- [Getting Started](#getting-started)
-- [Future Plans](#future-plans)
+- [Overview](#overview)  
+- [Features](#features)  
+- [Hardware Architecture](#hardware-architecture)  
+- [Software Stack](#software-stack)  
+- [Motion Control Pipeline](#motion-control-pipeline)  
+- [Power System](#power-system)  
+- [Current Limitations](#current-limitations)  
+- [Future Roadmap](#future-roadmap)  
+- [Authors](#authors)
 
 ---
 
 ## Overview
 
-This project is a modular quadruped robot developed by a student team from IIT Kharagpur. Designed and 3D-modeled from scratch, the robot uses powerful servos, embedded computing platforms, and a rich set of sensors for mobility, balance, and object interaction in real-time.
+This project is a custom-designed quadruped robot developed by undergraduate students at IIT Kharagpur as part of the Inter-Hall General Championship. Designed and 3D-modeled from scratch, the robot demonstrates stable walking using a predefined gait cycle and is controlled using a wireless gamepad. The current version focuses on mechanical design, embedded control, and basic motion execution, serving as a foundation for future autonomous functionality.
 
 ---
 
 ## Features
 
-- Modular leg design with 3 DOF per leg
-- Real-time human/object tracking using YOLO and depth camera
-- Sensor fusion using IMU and pressure sensors for dynamic balance
-- Dual onboard processing with Jetson Nano and Raspberry Pi 4
-- ROS-compatible software architecture
-- 3D-printed frame and open-source hardware
+- **3 DOF per Leg**: Each leg has hip yaw, hip pitch, and knee pitch degrees of freedom  
+- **Predefined Gait Execution**: Robot walks in a fixed direction using a static gait sequence  
+- **Wireless Gamepad Control**: Controlled via USB receiver plugged into Raspberry Pi  
+- **Modular & Repairable**: 3D-printed frame and standardized leg modules  
+- **ROS 2 Ready**: System design is ROS 2-compatible for future integration
 
 ---
 
 ## Hardware Architecture
 
-### Controllers
-- **Jetson Nano**: Vision processing, object tracking, and motion planning
-- **Raspberry Pi 5**: Sensor interfacing, depth processing, and ROS nodes
+**Controllers:**
+- **Raspberry Pi 4 / 5**: Handles motor control logic, sensor input, and ROS 2 nodes  
 
-### Actuators
-- **DS5160 (60kg·cm)**: Hip actuation
-- **DS3225 (25kg·cm)**: Knee and lateral leg movement
 
-### Sensors
-- **10-axis IMU** (ROS-compatible)
-- **Pressure sensors** (1 per foot)
-- **GPS module**
-- **LiDAR**
-- **Depth Camera**: Sipeed MaixSense
-- **2x 8MP CSI Cameras** (120° FOV) for stereo vision
+**Actuators:**
+- **DS5160 (60kg·cm) servo** – Hip pitch  
+- **DS3225 (25kg·cm) servo** – Knee and hip yaw
+
+**Sensors:**
+- **10-axis IMU** – Orientation sensing  
+- *(Future support planned for pressure sensors, depth camera, LIDAR, and GPS)*
 
 ---
 
 ## Software Stack
 
-- **Operating System**: Ubuntu 22.04 (Jetson & Pi)
-- **Languages**: Python, C++
-- **Frameworks**:
-  - [ROS 2] (Robot Operating System)
-  - YOLOv5 or YOLOv8 (on Jetson Nano)
-  - OpenCV for preprocessing
-  - Sensor fusion filters
-  - PID controllers for balance
-
----
-
-## Tracking & Following System
-
-- **Camera Input**: One CSI camera to Jetson Nano, one to Pi
-- **Detection**: YOLO detects humans/objects
-- **Depth Mapping**: Depth at bounding box center is fetched from MaixSense
-- **Control**: Robot follows based on offset from center & target distance
-
-### YOLO + Depth Workflow:
-1. YOLO detects object → gives bounding box
-2. Center pixel is extracted
-3. Depth value at pixel is fetched
-4. Control logic aligns and moves robot toward object
+- **Operating System:** Raspberry Pi OS / Ubuntu 22.04  
+- **Programming Languages:** Python, C++  
+- **Middleware:** ROS 2 (Foxy)  
+- **Motion Logic:** Predefined gait states stored and replayed  
+- **User Input:** Wireless gamepad via USB dongle (plugged into Pi)
 
 ---
 
 ## Motion Control Pipeline
 
-1. **Sensor Data Input**:
-   - IMU (roll, pitch, yaw)
-   - Pressure sensors (ground contact)
-2. **Sensor Fusion**:
-   - Orientation estimation
-   - Foot contact validation
-3. **Balance Control**:
-   - PID feedback on lateral & pitch axes
-4. **Gait Planning**:
-   - FSM for trot/walk
-   - Weight shifting before leg lift
-5. **Motion Execution**:
-   - Servo commands via PWM or motor driver
+1. **Gait Cycle**: Manually triggered cyclic joint trajectories for all legs  
+2. **Leg Coordination**: FSM-based gait synchronizes foot contacts and swing phases  
+3. **Control Strategy**: Feedforward joint angle sequences  
+4. **Execution**: Servo angles sent via PWM using RPi bridge
 
 ---
 
 ## Power System
 
-- **Batteries**:
-  - 2 × 5200mAh 11.4V 3S LiPo
-  - 2 × 2200mAh 11.4V 3S LiPo
-  - 2S 5P 7.4V Li-ion (13Ah total)
-- **Power Management**:
+- **Power Sources:**
+  - 2 × 5200mAh 11.1V LiPo for actuators  
+  - 2S 5P 7.4V Li-ion (13Ah total) as separate supply for computing units (5V stepped down)
+
+- **Power Management:**
   - 3S 40A BMS for safety
-  - Buck converters for all servos
-  - Buck-boost converter for Jetson Nano
+  - Buck converters for servo rail isolation  
+  - Basic thermal & voltage safety integrated
 
 ---
 
-## Future Plans
+## Current Limitations
 
-Add SLAM & obstacle avoidance
-
-Dynamic gait learning using reinforcement learning
-
-Fully autonomous navigation
-
-Remote control via app or voice
-
+- No active balance or feedback control  
+- No vision, tracking, or sensor-based navigation  
 
 ---
 
-### Authors
+## Future Roadmap
 
-Team Proboticists, IIT Kharagpur
-Designed & developed by students passionate about robotics.
+We aim to evolve this platform into a fully autonomous quadruped research robot. Planned improvements include:
+
+- **Dynamic Gait Generation** with IMU feedback  
+- **SLAM and Obstacle Avoidance** using LiDAR and stereo cameras  
+- **YOLO-Based Object Tracking** with real-time depth mapping  
+- **Reinforcement Learning for Gait Adaptation**  
+- **Jetson Nano** for all the media processing and mapping 
+- **Fully Wireless Operation**  
+- **Custom App or Voice Command Interface**
+
+---
+
+## Authors
+
+**Team Proboticists**  
+IIT Kharagpur  
+*Designed, built, and tested by a student team passionate about robotics.*
